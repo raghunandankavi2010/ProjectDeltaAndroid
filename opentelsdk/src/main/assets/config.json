@@ -1,0 +1,12 @@
+{
+  "events": [
+    {
+      "event_name": "Go Shopping",
+      "event_type": "click_event"
+    },
+    {
+      "event_name": "Learn More",
+      "event_type": "click_event"
+    }
+  ]
+}
