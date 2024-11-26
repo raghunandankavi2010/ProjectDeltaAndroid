@@ -81,7 +81,15 @@ Tracking traces with open tel collector
        EventCollector.handleEvent("Go Shopping", "")
       }
     ```
-   "Go SHopping" is parent span. The second param is child span. You can leave it empty if you want.
+   "Go Shopping" is parent span. The second param is child span. You can leave it empty if you want.
+
+  ```
+      lifecycleScope.launch() {
+       EventCollector.handleEvent("Go Shopping", "Add to cart")
+      }
+   ```
+
+   "Add to cart" here is child span of Go Shopping
 
 ## Conclusion
 
