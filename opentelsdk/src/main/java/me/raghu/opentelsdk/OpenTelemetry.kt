@@ -3,7 +3,6 @@ package me.raghu.opentelsdk
 import android.app.Application
 import android.util.Log
 import io.opentelemetry.android.OpenTelemetryRum
-import io.opentelemetry.android.OpenTelemetryRumBuilder
 import io.opentelemetry.android.config.OtelRumConfig
 import io.opentelemetry.android.features.diskbuffering.DiskBufferingConfiguration
 import io.opentelemetry.api.common.AttributeKey.stringKey
@@ -12,13 +11,14 @@ import io.opentelemetry.api.incubator.events.EventBuilder
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
+import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter
 import io.opentelemetry.sdk.logs.internal.SdkEventLoggerProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-
 
 object OpenTelemetry {
 
@@ -28,6 +28,7 @@ object OpenTelemetry {
     private val scope = CoroutineScope(Dispatchers.IO + job)
 
     fun initialize(
+        configType: ConfigType,
         application: Application,
         spansIngestUrl: String,
         logsIngestUtl: String,
@@ -54,27 +55,42 @@ object OpenTelemetry {
         //"https://ingest.in.signoz.cloud:443/v1/traces" //"http://3.7.46.28:4317"
         val logsIngestUrl = logsIngestUtl
         // "https://ingest.in.signoz.cloud:443/v1/traces" // "http://3.7.46.28:4317"
-        val otelRumBuilder: OpenTelemetryRumBuilder =
-            OpenTelemetryRum.builder(application, config)
-                .addSpanExporterCustomizer {
-                    OtlpHttpSpanExporter.builder()
-                        .setEndpoint(spansIngestUrl)
-                        .addHeader(
-                            "signoz-access-token",
-                            accessToken
-                        )
-                        .build()
-                }
-                .addLogRecordExporterCustomizer {
-                    OtlpHttpLogRecordExporter.builder()
-                        .setEndpoint(logsIngestUrl)
-                        .addHeader(
-                            "signoz-access-token",
-                            accessToken
-                        )
-                        .build()
+       val otelRumBuilder = if(configType == ConfigType.HTTP) {
+                OpenTelemetryRum.builder(application, config)
+                    .addSpanExporterCustomizer {
+                        OtlpHttpSpanExporter.builder()
+                            .setEndpoint(spansIngestUrl)
+                            .addHeader(
+                                "signoz-access-token",
+                                accessToken
+                            )
+                            .build()
+                    }
+                    .addLogRecordExporterCustomizer {
+                        OtlpHttpLogRecordExporter.builder()
+                            .setEndpoint(logsIngestUrl)
+                            .addHeader(
+                                "signoz-access-token",
+                                accessToken
+                            )
+                            .build()
 
-                }
+                    }
+        } else {
+           OpenTelemetryRum.builder(application, config)
+               .addSpanExporterCustomizer {
+                   OtlpGrpcSpanExporter.builder()
+                       .setEndpoint(spansIngestUrl)
+                       .build()
+               }
+               .addLogRecordExporterCustomizer {
+                   OtlpGrpcLogRecordExporter.builder()
+                       .setEndpoint(logsIngestUrl)
+                       .build()
+
+               }
+        }
+
         try {
             rum = otelRumBuilder.build()
             Log.d(TAG, "RUM session started: " + rum!!.rumSessionId)
