@@ -73,6 +73,15 @@ Tracking traces with open tel collector
         ...
     </application>
     ```
+   
+4. Start collecting events
+ 
+    ```
+      lifecycleScope.launch() {
+       EventCollector.handleEvent("Go Shopping", "")
+      }
+    ```
+   "Go SHopping" is parent span. The second param is child span. You can leave it empty if you want.
 
 ## Conclusion
 
